@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 import { User } from './entities/user.entity';
+import { LoginUserDto,CreateUserDto,UpdateUserDto } from './dto';
+
 
 @Injectable()
 export class UsersService {
@@ -18,8 +19,13 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     try {
-      const user = this.usersRepository.create(createUserDto);
+      const {password,...userData} = createUserDto;
+      const user = this.usersRepository.create({
+        ...userData,
+        password: bcrypt.hashSync(password,10)
+      });
       await this.usersRepository.save(user);
+      delete user.password;
       
       return user;
 
@@ -29,12 +35,24 @@ export class UsersService {
   }
 
 
-  async findOne(id: string) {
-     const user = await this.usersRepository.findOneBy({id});
-     if(!user) 
-        throw new NotFoundException(`User with id ${id} not found`);
+  async login({password, email}: LoginUserDto) {
+    try {
+      const user = await this.usersRepository.findOne({
+       where:{email},
+       select:{email: true, password: true}
+      }) 
 
-    return user;
+      if(!user) 
+        throw new UnauthorizedException('Credentials are not valid(email)');
+
+      if(!bcrypt.compareSync(password, user.password))
+        throw new UnauthorizedException('Credentials are not valid(password)');
+
+      return user;
+      //Todo retornar jwt
+    } catch (error) {
+      this.handleDBExceptions(error); 
+    }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -51,6 +69,7 @@ export class UsersService {
     } catch (error) {
       this.handleDBExceptions(error);
     }
+    delete user.password;
 
     return user;
   }
@@ -64,6 +83,7 @@ export class UsersService {
 
     user.is_deleted = new Date();
     await this.usersRepository.save(user);
+    delete user.password;
 
     return user;
   }
