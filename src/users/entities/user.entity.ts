@@ -28,13 +28,15 @@ export class User {
 
 
     @BeforeInsert()
-    setCreateAt(){
+    checkFieldsBeforeInserst(){
         this.create_at = new Date();
+        this.email = this.email.toLowerCase().trim();
     }
 
     @BeforeUpdate()
-    setUpdateAt(){
+    checkFieldsBeforeUpdate(){
         this.update_at = new Date();
+        this.email = this.email.toLowerCase().trim();
     }
 
 }

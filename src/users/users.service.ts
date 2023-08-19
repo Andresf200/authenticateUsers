@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { User } from './entities/user.entity';
-import { LoginUserDto,CreateUserDto,UpdateUserDto } from './dto';
+import {CreateUserDto,UpdateUserDto } from './dto';
 
 
 @Injectable()
@@ -34,25 +34,11 @@ export class UsersService {
     }
   }
 
-
-  async login({password, email}: LoginUserDto) {
-    try {
-      const user = await this.usersRepository.findOne({
+  async findOne(email: string){
+    return await this.usersRepository.findOne({
        where:{email},
        select:{email: true, password: true}
       }) 
-
-      if(!user) 
-        throw new UnauthorizedException('Credentials are not valid(email)');
-
-      if(!bcrypt.compareSync(password, user.password))
-        throw new UnauthorizedException('Credentials are not valid(password)');
-
-      return user;
-      //Todo retornar jwt
-    } catch (error) {
-      this.handleDBExceptions(error); 
-    }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
