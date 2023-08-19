@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,7 +19,6 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     try {
       const user = this.usersRepository.create(createUserDto);
-      user.create_at = new Date;
       await this.usersRepository.save(user);
       
       return user;
@@ -30,16 +29,43 @@ export class UsersService {
   }
 
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+     const user = await this.usersRepository.findOneBy({id});
+     if(!user) 
+        throw new NotFoundException(`User with id ${id} not found`);
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user  = await this.usersRepository.preload({
+      id: id,
+      ...updateUserDto,
+    });
+
+    if(!user)
+        throw new NotFoundException(`User with id ${id} not found`);
+
+    try {  
+      await this.usersRepository.save(user)
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
+
+    return user;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const user = await this.usersRepository.findOneBy({id});
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    user.is_deleted = new Date();
+    await this.usersRepository.save(user);
+
+    return user;
   }
 
   private handleDBExceptions(error:any){

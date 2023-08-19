@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class User {
@@ -25,4 +25,16 @@ export class User {
 
     @Column({type: 'timestamp'})
     create_at: Date;
+
+
+    @BeforeInsert()
+    setCreateAt(){
+        this.create_at = new Date();
+    }
+
+    @BeforeUpdate()
+    setUpdateAt(){
+        this.update_at = new Date();
+    }
+
 }
