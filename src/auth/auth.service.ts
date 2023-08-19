@@ -25,8 +25,10 @@ export class AuthService {
     ) {}
 
   async login({ password, email }: LoginUserDto) {
-    try {
-      const user = await this.findOne(email);
+      const user = await this.usersRepository.findOne({
+       where:{email},
+       select:{email: true, password: true}
+      });
 
       if (!user)
         throw new UnauthorizedException('Credentials are not valid(email)');
@@ -38,9 +40,6 @@ export class AuthService {
       return {
         access_token: await this.jwtService.signAsync(payload),
       };
-    } catch (error) {
-      this.handleDBExceptions(error);
-    }
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -102,6 +101,7 @@ export class AuthService {
 
   private handleDBExceptions(error: any) {
     if (error.code === '23505') throw new BadRequestException(error.detail);
+
 
     this.logger.error(error);
 

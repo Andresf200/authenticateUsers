@@ -34,6 +34,7 @@ export class AuthController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard())
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -42,6 +43,7 @@ export class AuthController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard())
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.authService.remove(id);
   }
